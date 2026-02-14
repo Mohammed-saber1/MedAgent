@@ -1,70 +1,130 @@
 # MedAgent: Intelligent Medical Research Assistant
 
-MedAgent is a sophisticated AI-powered medical research assistant designed to navigate complex medical queries, retrieving and synthesizing information from trusted sources like PubMed and the broader web.
+![MedAgent Architecture](/home/mohammed_saber/.gemini/antigravity/brain/c788949d-ade4-4672-b467-8940953df62f/medagent_architecture_1771081372676.png)
 
-## Demo
+MedAgent is a sophisticated **multi-agent AI system** designed to revolutionize medical research. By orchestrating a team of specialized agents—capable of web search, PubMed literature review, and domain-specific reasoning—it synthesizes complex medical queries into accurate, comprehensive, and verified answers.
 
-![MedAgent Demo]([demos/MedAgent_demo.mp4](https://private-user-images.githubusercontent.com/176330073/549893193-2c713376-151c-49b8-bb2a-c77e2d4591c6.mp4?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzEwODAxNzQsIm5iZiI6MTc3MTA3OTg3NCwicGF0aCI6Ii8xNzYzMzAwNzMvNTQ5ODkzMTkzLTJjNzEzMzc2LTE1MWMtNDliOC1iYjJhLWM3N2UyZDQ1OTFjNi5tcDQ_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMjE0JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDIxNFQxNDM3NTRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1mZWU0ZGY0MTc4ZTFjNzYyZWQ4MGIyOTQzZjA4MTE5OGU3NjEzMjYyZDRhM2JmOTNjMzQyNDg0ZDQ0YWUyYzNmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.DE9sTA_M6FacSPjlzcjiH3gBwOQVHxl4WgtUzj9GvQI))
+## 🚀 Key Features
 
-## Key Features
+*   **🧠 Multi-Agent Orchestration**: Powered by a **LangGraph state machine** that coordinates specialized workers (Web Search, PubMed RAG, MedILlama).
+*   **⚡ Real-time Streaming**: Delivers instant feedback with token-by-token responses and live status updates on agent activities.
+*   **📚 RAG & Evidence-Based**: Cross-references findings with real-time PubMed literature and clinical trial data.
+*   **🔄 Self-Correction**: Features a **Reflection Agent** that critiques and iteratively improves answers to ensure medical accuracy.
+*   **💾 Persistent Memory**: Saves conversation history and context using MongoDB.
+*   **🌍 Polyglot capabilities**: Processes and generates medical insights in multiple languages (English, Spanish, French, German, Arabic, etc.).
+*   **💻 Dual Interfaces**: 
+    *   **Web UI**: A polished, interactive Streamlit application.
+    *   **CLI**: A robust command-line tool for headless operation.
 
-*   **Multi-Agent Architecture**: Utilizes a graph of specialized AI agents (Web Search, PubMed RAG, MedILlama) orchestrated by a central planner.
-*   **Real-time Streaming**: Provides token-by-token responses and live updates on agent activities.
-*   **Medical Accuracy**: Cross-references findings with PubMed literature (RAG) and domain-specific knowledge.
-*   **Reflection & Self-Correction**: Automatically critiques and refines answers to ensure quality.
-*   **Session Management**: Persists conversation history using MongoDB.
-*   **Dual Interfaces**:
-    *   **Web UI**: A polished Streamlit application for interactive use.
-    *   **CLI**: A robust command-line interface for developer testing and headless operation.
-*   **Multilingual Support**: Capable of processing queries and generating potential responses in multiple languages (English, Spanish, French, German, Arabic, etc.), leveraging the polyglot capabilities of the underlying LLM.
+---
 
-## How It Works
+## 🛠️ System Architecture
 
-MedAgent operates on a **LangGraph-based state machine** that coordinates specialized agents:
+MedAgent operates as a directed cyclic graph (DCG) where a central planner coordinates specialized tools.
 
-1.  **Input Processing**: User queries are received via the Streamlit UI or CLI.
-2.  **Evaluation Agent**: Analyzes the query complexity.
-    *   *Simple queries* (e.g., "What is a fever?") are answered immediately.
-    *   *Complex queries* trigger the full research workflow.
-3.  **Orchestration**: The **Orchestration Agent** breaks down complex queries into sub-tasks (e.g., "Search for latest diabetes treatments", "Check side effects").
-4.  **Specialized Workers**:
-    *   **Web Search Agent**: Uses Tavily API to find real-time medical data and clinical trials.
-    *   **MedILlama Agent**: A specialized RAG agent (simulated/fine-tuned) that provides domain-specific medical knowledge.
-5.  **Compilation**: The **Compile Agent** synthesizes findings from all workers into a cohesive answer.
-6.  **Reflection & Iterate**: The **Reflection Agent** critiques the answer for medical accuracy and completeness. If the quality is insufficient, the cycle repeats (up to 3 times) to refine the result.
-7.  **Response**: The final verified answer is streamed to the user.
+### Workflow Diagram
 
+```mermaid
+graph TD
+    Start([User Query]) --> Eval[Evaluation Agent]
+    
+    %% Simple Query Path
+    Eval -- "Simple Query" --> End([Direct Response])
+    
+    %% Complex Query Path
+    Eval -- "Complex Query" --> Orch[Orchestration Agent]
+    
+    subgraph "Specialized Agents (Parallel Execution)"
+        direction TB
+        Orch -->|Invokes| Web[Web Search Agent]
+        Orch -->|Invokes| Med[MedILlama Agent]
+        Orch -->|Invokes| RAG[PubMed RAG Agent]
+    end
+    
+    Web --> Compile[Compile Agent]
+    Med --> Compile
+    RAG --> Compile
+    
+    Compile --> Reflect[Reflection Agent]
+    
+    %% Reflection Loop
+    Reflect -- "Quality Approved / Max Retries" --> End
+    Reflect -- "Needs Improvement" --> Orch
+```
 
-## Getting Started
+### Request Sequence
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant UI as Interface (Streamlit/CLI)
+    participant E as Evaluator
+    participant O as Orchestrator
+    participant A as Agents (Web/RAG/Med)
+    participant C as Compiler
+    participant R as Reflector
+
+    U->>UI: Enters Medical Query
+    UI->>E: Analyze Complexity
+    
+    alt Simple Query
+        E->>UI: Return Direct Answer
+    else Complex Query
+        E->>O: Delegate to Orchestrator
+        loop Refinement Cycle
+            O->>A: Dispatch Sub-tasks (Parallel)
+            A-->>C: Return Search/RAG Results
+            C->>R: Synthesize Draft Answer
+            R->>R: Critique & Verify
+            
+            alt Quality Pass
+                R->>UI: Stream Final Response
+            else Needs Improvement
+                R->>O: Request Additional Info
+            end
+        end
+    end
+```
+
+---
+
+## 🎥 Demo
+
+![MedAgent Demo](https://github.com/user-attachments/assets/e51dda6c-4707-46c9-be85-d071402f5375)
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
 *   **Python 3.10+**
-*   **MongoDB**: Run locally or use Atlas.
-*   **Groq API Key**: For the LLM engine.
-*   **Tavily API Key**: For web search capabilities.
-*   **NCBI Email**: For PubMed API access.
+*   **MongoDB**: Local instance or Atlas cluster.
+*   **API Keys**:
+    *   `GROQ_API_KEY`: For the core LLM engine.
+    *   `TAVILY_API_KEY`: For real-time web search.
+    *   `NCBI_EMAIL`: For PubMed API access.
 
 ### Installation
 
-1.  **Clone the repository**:
+1.  **Clone the repository**
     ```bash
-    git clone https://github.com/yourusername/MedAgent.git
+    git clone https://github.com/Mohammed-saber1/MedAgent.git
     cd MedAgent
     ```
 
-2.  **Create and activate a virtual environment**:
+2.  **Set up Virtual Environment**
     ```bash
     python -m venv venv
-    source venv/bin/activate  # On Windows: venv\\Scripts\\activate
+    source venv/bin/activate  # Windows: venv\\Scripts\\activate
     ```
 
-3.  **Install dependencies**:
+3.  **Install Dependencies**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Configuration**:
+4.  **Configuration**
     Create a `.env` file in the root directory:
     ```env
     GROQ_API_KEY=your_groq_api_key
@@ -74,67 +134,65 @@ MedAgent operates on a **LangGraph-based state machine** that coordinates specia
     NCBI_EMAIL=your.email@example.com
     ```
 
-## Usage
+### Usage
 
-### Run the Web Interface (Streamlit)
-The recommended way to use MedAgent.
+**Option 1: Web Interface (Recommended)**
+Launch the interactive Streamlit app:
 ```bash
 streamlit run streamlit_app.py
 ```
-Access the app at `http://localhost:8501`.
+> Access at `http://localhost:8501`
 
-### Run the Backend Server
-Start the FastAPI server for API access.
-```bash
-uvicorn src.server.app:app --reload
-```
-API Documentation: `http://localhost:8000/docs`
-
-### Run the CLI
-Use the command-line interface for quick queries.
+**Option 2: Command Line Interface**
+Run the terminal-based interactive mode:
 ```bash
 python src/main.py
 ```
 
-## Testing
-
-Run the unit tests to verify system integrity.
+**Option 3: API Server**
+Start the FastAPI backend:
 ```bash
-pytest tests/
+uvicorn src.server.app:app --reload
 ```
+> Docs at `http://localhost:8000/docs`
 
-## Project Structure
+---
 
-```
+## 📂 Project Structure
+
+```text
 MedAgent/
-├── demos/               # Demo videos
 ├── src/
-│   ├── agents/          # Agent implementations (MedILlama, WebSearch, RAG, etc.)
-│   ├── server/          # FastAPI backend application
-│   ├── schemas/         # Pydantic models (API, Session, Agents)
-│   ├── utils/           # Utility functions and prompts
-│   ├── config.py        # Application configuration
-│   ├── main.py          # CLI entry point
-│   └── agent_graph.py   # LangGraph workflow definition
-├── tests/               # Unit and integration tests
-├── streamlit_app.py     # Streamlit frontend
-├── requirements.txt     # Python dependencies
-└── README.md            # Project documentation
+│   ├── agents/          # Agent Logic (Web, RAG, Orchestrator, etc.)
+│   ├── server/          # FastAPI Backend
+│   ├── schemas/         # Pydantic Data Models
+│   ├── utils/           # Prompts & Helpers
+│   ├── config.py        # Environment Configuration
+│   ├── agent_graph.py   # LangGraph Workflow Definition
+│   └── main.py          # CLI Entry Point
+├── tests/               # Unit & Integration Tests
+├── streamlit_app.py     # Frontend Application
+└── requirements.txt     # Python Dependencies
 ```
 
-
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any improvements.
 
-## License
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+## 📄 License
 
 This project is licensed under the MIT License.
 
-## Author
+## 👨‍💻 Author
 
 **Mohammed Saber**
 
-- **Email**: [mohammed.saber.business@gmail.com](mailto:mohammed.saber.business@gmail.com)
-- **LinkedIn**: [Mohammed Saber](https://www.linkedin.com/in/mohamedsaber14/?isSelfProfile=true)
-- **GitHub**: [Mohammed-saber1](https://github.com/Mohammed-saber1)
+*   **Email**: [mohammed.saber.business@gmail.com](mailto:mohammed.saber.business@gmail.com)
+*   **LinkedIn**: [Mohammed Saber](https://www.linkedin.com/in/mohamedsaber14/?isSelfProfile=true)
+*   **GitHub**: [Mohammed-saber1](https://github.com/Mohammed-saber1)

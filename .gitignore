@@ -48,3 +48,4 @@ venv.bak/
 medagent.log
 demos/*.mp4
 !demos/MedAgent_demo.mp4
+img.png
