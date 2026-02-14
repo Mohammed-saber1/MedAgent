@@ -1,6 +1,6 @@
 import os
 import json
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 from src.schemas.state import GraphState, WebSearchResult, WebSearchResultItem
 from src.utils.prompts import search_summary_prompt
 from src.config import LLM
@@ -26,9 +26,9 @@ async def web_search_agent(state: GraphState) -> dict:
             else:
                  web_search_tasks.append(str(t))
 
-    tavily_tool = TavilySearchResults(
+    tavily_tool = TavilySearch(
         max_results=5,
-        api_key=os.getenv("TAVILY_API_KEY")
+        tavily_api_key=os.getenv("TAVILY_API_KEY")
     )
     
     all_results = []
@@ -36,17 +36,28 @@ async def web_search_agent(state: GraphState) -> dict:
     for query in web_search_tasks:
         print(f"\n🔎 Searching for: \"{query}\"")
         try:
-            # tavily_tool.ainvoke returns a list of dictionaries usually
             raw_results = await tavily_tool.ainvoke(query)
-            
+
             # Map to our schema
             search_items = []
-            if isinstance(raw_results, list):
-                for r in raw_results:
+
+            # Normalize: new TavilySearch may return a dict
+            # with a "results" key, a list, or a string.
+            result_list = []
+            if isinstance(raw_results, dict):
+                result_list = raw_results.get("results", [])
+            elif isinstance(raw_results, list):
+                result_list = raw_results
+            elif isinstance(raw_results, str):
+                # String response — wrap it as a single item
+                result_list = [{"url": "", "title": "", "content": raw_results}]
+
+            for r in result_list:
+                if isinstance(r, dict):
                     search_items.append(WebSearchResultItem(
-                        url=r.get("url"),
-                        title=r.get("title", ""), # title might not always be there depending on Tavily output format updates
-                        content=r.get("content")
+                        url=r.get("url", ""),
+                        title=r.get("title", ""),
+                        content=r.get("content", ""),
                     ))
             
             print(f"✓ Found {len(search_items)} results for query: \"{query}\"")

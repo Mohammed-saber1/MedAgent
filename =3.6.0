@@ -1,0 +1,7 @@
+Collecting motor
+  Using cached motor-3.7.1-py3-none-any.whl.metadata (21 kB)
+Requirement already satisfied: pymongo<5.0,>=4.9 in /home/mohammed_saber/anaconda3/lib/python3.12/site-packages (from motor) (4.13.2)
+Requirement already satisfied: dnspython<3.0.0,>=1.16.0 in /home/mohammed_saber/anaconda3/lib/python3.12/site-packages (from pymongo<5.0,>=4.9->motor) (2.8.0)
+Using cached motor-3.7.1-py3-none-any.whl (74 kB)
+Installing collected packages: motor
+Successfully installed motor-3.7.1

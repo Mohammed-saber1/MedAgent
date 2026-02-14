@@ -1,7 +1,7 @@
 import os
 from Bio import Entrez
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
@@ -82,12 +82,11 @@ async def pubmed_rag_agent(state: GraphState) -> dict:
     if not all_abstracts:
         return {"ragResponse": "No relevant PubMed articles found."}
 
-    # 2. Vector Store (In-memory Chroma for this session, or persistent if needed)
-    # Using Ollama Embeddings
+    # 2. Vector Store (In-memory Chroma for this session)
+    # Using HuggingFace Embeddings (lightweight, no Ollama needed)
     print("Embedding and retrieving...")
-    embeddings = OllamaEmbeddings(
-        model=os.getenv("OLLAMA_MODEL", "medllama2"),
-        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    embeddings = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2"
     )
     
     # Split text

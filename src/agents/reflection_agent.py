@@ -2,12 +2,11 @@ import os
 import json
 from pydantic import BaseModel, Field
 from typing import Optional
-import ollama
 
 from src.schemas.state import GraphState
-from src.config import BYPASS_REFLECTION
+from src.config import BYPASS_REFLECTION, LLM
 
-# Schema for Structured Output from Ollama (using Pydantic validation after JSON parse)
+# Schema for Structured Output
 class ReflectionOutput(BaseModel):
     qualityPassed: bool
     feedback: Optional[str] = None
@@ -52,39 +51,27 @@ async def reflection_agent(state: GraphState) -> dict:
         Current Medical Response: {state['finalResponse']}
         """
 
-        # Using Ollama Python client directly for structured output
-        # Model name from env or config (using string directly here to match TS logic usage of 'model.toString()')
-        model_name = os.getenv("OLLAMA_MODEL", "medllama2") 
-        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        # Using Groq with structured output via LangChain
+        structured_llm = LLM.with_structured_output(ReflectionOutput)
         
-        client = ollama.Client(host=base_url)
+        result = await structured_llm.ainvoke([
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": formatted_user_prompt}
+        ])
         
-        response = client.chat(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": formatted_user_prompt}
-            ],
-            format=ReflectionOutput.model_json_schema()
-        )
-        
-        content = response['message']['content']
-        parsed = ReflectionOutput.model_validate_json(content)
-        
-        print(f"Reflection Result: Passed={parsed.qualityPassed}")
+        print(f"Reflection Result: Passed={result.qualityPassed}")
         
         return {
             "iterationCount": iteration_count,
-            "qualityPassed": parsed.qualityPassed,
-            "reflectionFeedback": parsed.feedback
+            "qualityPassed": result.qualityPassed,
+            "reflectionFeedback": result.feedback
         }
 
     except Exception as e:
         print(f"❌ Reflection failed: {e}")
-        # Fail safe: pass if reflection fails to avoid getting stuck? Or fail to prompt user? 
-        # Let's assume pass to avoid infinite error loops in this demo.
         return {
              "iterationCount": iteration_count,
              "qualityPassed": True,
              "reflectionFeedback": f"Reflection failed with error: {str(e)}"
         }
+

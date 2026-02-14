@@ -46,7 +46,7 @@ No single AI model excels at all of these. This system solves the problem by **d
 | **Multi-Agent Architecture** | Each agent has a single responsibility (evaluation, search, analysis, compilation, quality control) |
 | **Parallel Execution** | Agents run concurrently via LangGraph, minimizing total response time |
 | **Iterative Refinement** | A reflection loop detects gaps and triggers re-research cycles (up to 3 iterations) |
-| **Dual-LLM Strategy** | Groq (Llama 3.3 70B) for orchestration & compilation; Ollama (MedLlama) for domain-specific medical analysis |
+| **Unified LLM Strategy** | Groq (Llama 3.3 70B) powers all agents — orchestration, medical analysis, compilation, and reflection |
 | **Evidence-Based** | Web search and PubMed RAG provide cited, verifiable references |
 
 ---
@@ -75,7 +75,7 @@ User Query
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │  MedILlama   │  │  Web Search  │  │  PubMed RAG  │
 │  Agent       │  │  Agent       │  │  Agent       │
-│ (Ollama)     │  │ (Tavily)     │  │ (Biopython)  │
+│ (Groq)       │  │ (Tavily)     │  │ (Biopython)  │
 └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
        │                  │                  │
        └──────────────────┴──────────────────┘
@@ -161,7 +161,7 @@ sequenceDiagram
 
         par Parallel Agent Execution
             OR->>ML: MedILlama sub-tasks
-            ML->>ML: Generate medical analysis via Ollama
+            ML->>ML: Generate medical analysis via Groq
             ML-->>CO: Return medILlamaResponse
         and
             OR->>WS: Web Search sub-tasks
@@ -222,10 +222,10 @@ sequenceDiagram
 | Property | Detail |
 |---|---|
 | **File** | `src/agents/medillama_agent.py` |
-| **LLM** | Ollama (MedLlama2 / custom medical model) |
+| **LLM** | Groq (Llama 3.3 70B) |
 | **Purpose** | Domain-specific medical analysis |
 
-- Processes sub-tasks using a fine-tuned medical model running locally via Ollama.
+- Processes sub-tasks using Groq's cloud-hosted Llama 3.3 70B model.
 - Provides detailed explanations of pathophysiology, treatment mechanisms, drug interactions, and clinical considerations.
 - Output is structured for integration with other agent responses.
 
@@ -245,12 +245,12 @@ sequenceDiagram
 | Property | Detail |
 |---|---|
 | **File** | `src/agents/pubmed_rag_agent.py` |
-| **Tools** | Biopython (Entrez), ChromaDB, Ollama Embeddings |
+| **Tools** | Biopython (Entrez), ChromaDB, HuggingFace Embeddings |
 | **Purpose** | Retrieve and analyze PubMed abstracts |
 
 - Searches PubMed via NCBI's Entrez API (Biopython) for relevant abstracts.
 - Splits documents using `RecursiveCharacterTextSplitter` (1000 chars, 200 overlap).
-- Creates an in-memory ChromaDB vector store with Ollama embeddings.
+- Creates an in-memory ChromaDB vector store with HuggingFace embeddings (all-MiniLM-L6-v2).
 - Retrieves top-k most relevant chunks for each query.
 
 ### 6. Compile Agent
@@ -269,7 +269,7 @@ sequenceDiagram
 | Property | Detail |
 |---|---|
 | **File** | `src/agents/reflection_agent.py` |
-| **LLM** | Ollama (MedLlama2 / custom medical model) |
+| **LLM** | Groq (Llama 3.3 70B) |
 | **Purpose** | Quality assurance and feedback |
 
 - Reviews the compiled response for:
@@ -316,13 +316,13 @@ The `MAX_ITERATIONS` constant (default: `3`) prevents infinite loops.
 |---|---|---|
 | **Workflow Engine** | LangGraph | Directed graph for agent orchestration with conditional edges |
 | **Prompt Framework** | LangChain | Modular prompt templates and structured output parsing |
-| **Primary LLM** | Groq (Llama 3.3 70B) | Orchestration, web search summarization, compilation |
-| **Medical LLM** | Ollama (MedLlama2) | Domain-specific medical analysis and quality reflection |
-| **Web Search** | Tavily API | Real-time medical research retrieval |
+| **LLM (all agents)** | Groq (Llama 3.3 70B) | Orchestration, medical analysis, compilation, reflection |
+| **Web Search** | Tavily API (langchain-tavily) | Real-time medical research retrieval |
 | **Literature Search** | Biopython (Entrez) | PubMed abstract retrieval via NCBI |
 | **Vector Store** | ChromaDB | In-memory embedding storage for RAG |
-| **Embeddings** | Ollama Embeddings | Text vectorization for similarity search |
-| **API Framework** | FastAPI | REST and WebSocket endpoints |
+| **Embeddings** | HuggingFace (all-MiniLM-L6-v2) | Text vectorization for similarity search |
+| **Database** | MongoDB (motor) | Persistent session and chat history storage |
+| **API Framework** | FastAPI | REST API endpoints |
 | **Server** | Uvicorn | ASGI server with hot reload |
 | **Data Validation** | Pydantic | Schema validation for state and structured outputs |
 | **Language** | Python 3.11 | Core implementation language |
@@ -352,11 +352,11 @@ Medical-Research-Assistant/
 │   │   └── prompts.py             # All LangChain prompt templates
 │   │
 │   ├── server/
-│   │   └── app.py                 # FastAPI server (REST + WebSocket + Sessions)
+│   │   └── app.py                 # FastAPI server (REST API)
 │   │
 │   ├── agent_graph.py             # LangGraph workflow definition
 │   ├── config.py                  # LLM initialization and constants
-│   ├── session_manager.py         # In-memory session store for API
+│   ├── session_manager.py         # MongoDB-backed session store
 │   └── main.py                    # CLI entry point (with chat history)
 │
 ├── examples/
@@ -378,7 +378,7 @@ Medical-Research-Assistant/
 
 - **Python 3.11+**
 - **Conda** (recommended) or `venv`
-- **Ollama** installed and running locally ([Download Ollama](https://ollama.com/))
+- **MongoDB** installed and running locally ([Download MongoDB](https://www.mongodb.com/try/download/community))
 - **API Keys**:
   - [Groq API Key](https://console.groq.com/) — for the primary LLM
   - [Tavily API Key](https://tavily.com/) — for web search
@@ -414,19 +414,12 @@ Edit `.env` with your credentials:
 ```env
 GROQ_API_KEY=your_groq_api_key
 TAVILY_API_KEY=your_tavily_api_key
-OLLAMA_MODEL=medllama2
-OLLAMA_BASE_URL=http://localhost:11434
 NCBI_EMAIL=your_email@example.com
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=medagent
 ```
 
-### Step 5: Prepare the Medical Model
-
-```bash
-ollama pull medllama2
-ollama serve
-```
-
-> **Note:** You can use any Ollama-compatible medical model. Update `OLLAMA_MODEL` in `.env` accordingly.
+> **Note:** All agents use Groq's cloud API — no local models needed.
 
 ---
 
@@ -480,10 +473,10 @@ python run_server.py
 ```
 
 The server starts on `http://localhost:8080` with:
-- **Stateless query**: `POST /api/query`
-- **Session management**: `POST/GET/DELETE /api/sessions`
-- **Session query**: `POST /api/sessions/{id}/query`
+- **Chat**: `POST /api/chat` — send a message with a session ID
+- **Delete session**: `DELETE /api/sessions/{id}`
 - **Health check**: `GET /health`
+- **API docs**: `http://localhost:8080/docs` (Swagger UI)
 
 ---
 
@@ -495,9 +488,9 @@ Configuration is managed via `src/config.py` and environment variables:
 |---|---|---|
 | `GROQ_API_KEY` | API key for Groq cloud LLM | *Required* |
 | `TAVILY_API_KEY` | API key for Tavily web search | *Required* |
-| `OLLAMA_MODEL` | Ollama model name for medical tasks | `medllama2` |
-| `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
 | `NCBI_EMAIL` | Email for PubMed/NCBI API access | `your.email@example.com` |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017` |
+| `MONGODB_DB_NAME` | MongoDB database name | `medagent` |
 
 ### Internal Constants (`src/config.py`)
 
@@ -510,110 +503,67 @@ Configuration is managed via `src/config.py` and environment variables:
 
 ## 📡 API Reference
 
-### Stateless Query
+### Health Check
 
-#### `POST /api/query`
+#### `GET /health`
 
-Send a one-off medical query without session tracking.
+**Response:**
+```json
+{ "status": "ok" }
+```
+
+---
+
+### Chat
+
+#### `POST /api/chat`
+
+Send a message within a session. The session is **auto-created** if the given `sessionId` does not exist yet. Conversation history is preserved and passed to the agents for context.
 
 **Request:**
 ```json
-{ "userQuery": "What are the latest treatments for Type 2 Diabetes?" }
+{
+  "sessionId": "my-session-1",
+  "message": "What are the possible causes of chronic fatigue?"
+}
 ```
 
 **Response:**
 ```json
 {
-  "finalResponse": "Comprehensive medical report...",
+  "sessionId": "my-session-1",
+  "response": "Chronic fatigue can be caused by several factors...",
   "isSimpleQuery": false,
   "qualityPassed": true
 }
 ```
 
+> **Note:** Sessions are persisted in MongoDB. Restarting the server does not lose conversation history.
+
 ---
 
-### Session Management
-
-#### `POST /api/sessions`
-
-Create a new conversation session.
-
-**Response:**
-```json
-{
-  "sessionId": "550e8400-e29b-41d4-a716-446655440000",
-  "createdAt": "2026-02-14T01:50:00Z",
-  "message": "Session created successfully"
-}
-```
-
-#### `GET /api/sessions`
-
-List all active sessions.
-
-**Response:**
-```json
-{
-  "sessions": [
-    {
-      "sessionId": "550e8400-...",
-      "createdAt": "2026-02-14T01:50:00Z",
-      "updatedAt": "2026-02-14T01:55:00Z",
-      "messageCount": 3
-    }
-  ],
-  "total": 1
-}
-```
-
-#### `GET /api/sessions/{session_id}`
-
-Get session details and full conversation history.
-
-**Response:**
-```json
-{
-  "sessionId": "550e8400-...",
-  "createdAt": "2026-02-14T01:50:00Z",
-  "updatedAt": "2026-02-14T01:55:00Z",
-  "history": [
-    {
-      "query": "What is hypertension?",
-      "response": "Hypertension is...",
-      "isSimple": true,
-      "timestamp": "2026-02-14T01:51:00Z"
-    }
-  ]
-}
-```
+### Delete Session
 
 #### `DELETE /api/sessions/{session_id}`
 
-Delete a session and its conversation history.
+Delete a session and its conversation history from MongoDB.
 
 **Response:**
 ```json
 { "message": "Session deleted successfully" }
 ```
 
-#### `POST /api/sessions/{session_id}/query`
+---
 
-Submit a query within a session. Conversation history is passed to the agents for context.
+### Safety Behavior
 
-**Request:**
-```json
-{ "userQuery": "What are the treatment options?" }
-```
+The system follows strict safety rules for all responses:
 
-**Response:**
-```json
-{
-  "sessionId": "550e8400-...",
-  "finalResponse": "Based on our previous discussion...",
-  "isSimpleQuery": false,
-  "qualityPassed": true,
-  "historyLength": 2
-}
+| Behavior | Status |
+|---|---|
+| List possible causes for conditions/symptoms | ✅ Always |
+| Suggest further evaluation (tests, specialist consultations) | ✅ Always |
+| Recommend treatment, medications, or dosages | ❌ Only if explicitly asked |
 ```
 
 ---

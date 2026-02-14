@@ -1,7 +1,15 @@
-import uuid
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
+
+from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
+
+load_dotenv()
+
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "medagent")
 
 
 class ConversationEntry(BaseModel):
@@ -14,74 +22,66 @@ class ConversationEntry(BaseModel):
     )
 
 
-class Session(BaseModel):
-    """Represents a user session with conversation history."""
-    id: str
-    created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-    updated_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-    history: List[ConversationEntry] = []
-
-
 class SessionManager:
-    """In-memory session store for managing conversation sessions."""
+    """MongoDB-backed session store for conversation history."""
 
     def __init__(self):
-        self._sessions: Dict[str, Session] = {}
+        self._client = AsyncIOMotorClient(MONGODB_URI)
+        self._db = self._client[MONGODB_DB_NAME]
+        self._col = self._db["sessions"]
 
-    def create_session(self) -> Session:
-        """Create a new session and return it."""
-        session_id = str(uuid.uuid4())
-        session = Session(id=session_id)
-        self._sessions[session_id] = session
-        return session
+    async def create_session(
+        self, session_id: Optional[str] = None
+    ) -> dict:
+        """Create a new session document in MongoDB."""
+        import uuid
+        if session_id is None:
+            session_id = str(uuid.uuid4())
 
-    def get_session(self, session_id: str) -> Optional[Session]:
+        now = datetime.now(timezone.utc).isoformat()
+        doc = {
+            "_id": session_id,
+            "created_at": now,
+            "updated_at": now,
+            "history": [],
+        }
+        await self._col.insert_one(doc)
+        return doc
+
+    async def get_session(
+        self, session_id: str
+    ) -> Optional[dict]:
         """Get a session by ID. Returns None if not found."""
-        return self._sessions.get(session_id)
+        return await self._col.find_one({"_id": session_id})
 
-    def add_to_history(
+    async def add_to_history(
         self,
         session_id: str,
         query: str,
         response: str,
         is_simple: bool = False,
     ) -> None:
-        """Add a conversation turn to the session history."""
-        session = self._sessions.get(session_id)
-        if session is None:
-            raise KeyError(f"Session '{session_id}' not found")
-
-        entry = ConversationEntry(
-            query=query,
-            response=response,
-            is_simple=is_simple,
+        """Append a conversation turn to the session history."""
+        entry = {
+            "query": query,
+            "response": response,
+            "is_simple": is_simple,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        await self._col.update_one(
+            {"_id": session_id},
+            {
+                "$push": {"history": entry},
+                "$set": {
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                },
+            },
         )
-        session.history.append(entry)
-        session.updated_at = datetime.now(timezone.utc).isoformat()
 
-    def get_history(
-        self, session_id: str
-    ) -> List[ConversationEntry]:
-        """Get conversation history for a session."""
-        session = self._sessions.get(session_id)
-        if session is None:
-            raise KeyError(f"Session '{session_id}' not found")
-        return session.history
-
-    def delete_session(self, session_id: str) -> bool:
-        """Delete a session. Returns True if deleted, False if not found."""
-        if session_id in self._sessions:
-            del self._sessions[session_id]
-            return True
-        return False
-
-    def list_sessions(self) -> List[Session]:
-        """List all active sessions."""
-        return list(self._sessions.values())
+    async def delete_session(self, session_id: str) -> bool:
+        """Delete a session. Returns True if deleted."""
+        result = await self._col.delete_one({"_id": session_id})
+        return result.deleted_count > 0
 
 
 # Singleton instance

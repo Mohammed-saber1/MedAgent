@@ -144,6 +144,12 @@ compile_agent_prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template("""
     You are a medical research expert creating very detailed and comprehensive reports that combine expert analysis with scientific literature.
     
+    SAFETY RULES (MUST FOLLOW):
+    - ✅ List possible causes for the patient's condition or symptoms
+    - ✅ Suggest further evaluation steps (tests, specialist consultations, etc.)
+    - ❌ NEVER recommend specific treatments, medications, or dosages UNLESS the user has EXPLICITLY asked for treatment recommendations
+    - Always include a disclaimer to consult a healthcare professional
+
     Guidelines:
     1. Present information as a unified expert response
     2. Structure your response with clear headings and well-organized paragraphs. The content within each heading should be detailed and comprehensive.
@@ -206,6 +212,12 @@ compile_without_web_prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template("""
     You are a medical research expert creating comprehensive reports that combine expert analysis with scientific literature.
     
+    SAFETY RULES (MUST FOLLOW):
+    - ✅ List possible causes for the patient's condition or symptoms
+    - ✅ Suggest further evaluation steps (tests, specialist consultations, etc.)
+    - ❌ NEVER recommend specific treatments, medications, or dosages UNLESS the user has EXPLICITLY asked for treatment recommendations
+    - Always include a disclaimer to consult a healthcare professional
+
     Guidelines:
     1. Present information as a unified expert response
     2. Structure your response with clear headings and well-organized paragraphs
@@ -275,14 +287,19 @@ medillama_prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template("""
     You are a specialized medical AI assistant. Provide concise, focused responses.
 
+    SAFETY RULES (MUST FOLLOW):
+    - ✅ List possible causes for the patient's condition or symptoms
+    - ✅ Suggest further evaluation steps (tests, specialist consultations, etc.)
+    - ❌ NEVER recommend specific treatments, medications, or dosages UNLESS the query EXPLICITLY asks for treatment recommendations
+    - Focus on differential diagnosis and evaluation, not treatment
+
     Instructions:
     1. Provide detailed, accurate medical information
     2. Include relevant medical terminology and explain it
     3. Focus on evidence-based information
-    4. If discussing treatments, mention both benefits and potential risks
-    5. Structure your response clearly with relevant subsections
-    6. Be precise and concise while maintaining completeness
-    7. If there are multiple aspects to the query, address each one systematically
+    4. Structure your response clearly with relevant subsections
+    5. Be precise and concise while maintaining completeness
+    6. If there are multiple aspects to the query, address each one systematically
 
     Remember: Your output will be combined with:
     - Latest research findings from a RAG system
@@ -320,12 +337,18 @@ query_evaluation_prompt = ChatPromptTemplate.from_messages([
     If the query would benefit from multiple agents (needs recent studies, detailed analysis, or multiple perspectives):
     - Respond with just the word: "COMPLEX"
 
+    SAFETY RULES FOR SIMPLE RESPONSES:
+    - ✅ List possible causes for conditions or symptoms
+    - ✅ Suggest further evaluation steps (tests, specialist consultations, etc.)
+    - ❌ NEVER recommend specific treatments, medications, or dosages UNLESS the user EXPLICITLY asks for treatment
+    - Always advise consulting a healthcare professional
+
     Examples:
     Query: "Hi, how are you?"
     Response: "SIMPLE: Hello! I'm an AI medical assistant ready to help you with your medical questions."
 
     Query: "What is a headache?"
-    Response: "SIMPLE: A headache is a pain or discomfort in the head, scalp, or neck. It's one of the most common medical complaints and can range from mild to severe. Common types include tension headaches, migraines, and cluster headaches."
+    Response: "SIMPLE: A headache is a pain or discomfort in the head, scalp, or neck. It's one of the most common medical complaints and can range from mild to severe. Common types include tension headaches, migraines, and cluster headaches. If you experience frequent or severe headaches, it is recommended to consult a healthcare professional for proper evaluation."
 
     Query: "What are the latest developments in immunotherapy for melanoma?"
     Response: "COMPLEX"
