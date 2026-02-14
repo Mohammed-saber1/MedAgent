@@ -1,8 +1,10 @@
 # MedAgent: Intelligent Medical Research Assistant
-
-![MedAgent Architecture](/home/mohammed_saber/.gemini/antigravity/brain/c788949d-ade4-4672-b467-8940953df62f/medagent_architecture_1771081372676.png)
-
 MedAgent is a sophisticated **multi-agent AI system** designed to revolutionize medical research. By orchestrating a team of specialized agents—capable of web search, PubMed literature review, and domain-specific reasoning—it synthesizes complex medical queries into accurate, comprehensive, and verified answers.
+
+---
+
+## 🎥 Demo
+https://github.com/user-attachments/assets/b0c195c8-3be8-4864-9f88-85c05dd30463
 
 ## 🚀 Key Features
 
@@ -85,12 +87,6 @@ sequenceDiagram
         end
     end
 ```
-
----
-
-## 🎥 Demo
-
-![MedAgent Demo](https://github.com/user-attachments/assets/e51dda6c-4707-46c9-be85-d071402f5375)
 
 ---
 
