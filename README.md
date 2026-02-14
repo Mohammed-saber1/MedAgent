@@ -2,7 +2,11 @@
 
 MedAgent is a sophisticated AI-powered medical research assistant designed to navigate complex medical queries, retrieving and synthesizing information from trusted sources like PubMed and the broader web.
 
-## 🌟 Key Features
+## � Demo
+
+![MedAgent Demo](demos/MedAgent_demo.mp4)
+
+## �🌟 Key Features
 
 *   **Multi-Agent Architecture**: Utilizes a graph of specialized AI agents (Web Search, PubMed RAG, MedILlama) orchestrated by a central planner.
 *   **Real-time Streaming**: Provides token-by-token responses and live updates on agent activities.
@@ -118,11 +122,6 @@ MedAgent/
 └── README.md            # Project documentation
 ```
 
-## 🎥 Demo
-
-Watch the full workflow in action, including real-time reasoning and multi-agent coordination:
-
-▶️ **[View Demo Video](demos/MedAgent_demo.mp4)**
 
 ## 🤝 Contributing
 
@@ -131,3 +130,11 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 ## 📄 License
 
 This project is licensed under the MIT License.
+
+## 👤 Author
+
+**Mohammed Saber**
+
+- **Email**: [mohammed.saber.business@gmail.com](mailto:mohammed.saber.business@gmail.com)
+- **LinkedIn**: [Mohammed Saber](https://www.linkedin.com/in/mohamedsaber14/?isSelfProfile=true)
+- **GitHub**: [Mohammed-saber1](https://github.com/Mohammed-saber1)
