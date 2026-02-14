@@ -1,12 +1,12 @@
-# MedAgent: Intelligent Medical Research Assistant 🏥
+# MedAgent: Intelligent Medical Research Assistant
 
 MedAgent is a sophisticated AI-powered medical research assistant designed to navigate complex medical queries, retrieving and synthesizing information from trusted sources like PubMed and the broader web.
 
-## � Demo
+## Demo
 
 ![MedAgent Demo](demos/MedAgent_demo.mp4)
 
-## �🌟 Key Features
+## Key Features
 
 *   **Multi-Agent Architecture**: Utilizes a graph of specialized AI agents (Web Search, PubMed RAG, MedILlama) orchestrated by a central planner.
 *   **Real-time Streaming**: Provides token-by-token responses and live updates on agent activities.
@@ -18,7 +18,7 @@ MedAgent is a sophisticated AI-powered medical research assistant designed to na
     *   **CLI**: A robust command-line interface for developer testing and headless operation.
 *   **Multilingual Support**: Capable of processing queries and generating potential responses in multiple languages (English, Spanish, French, German, Arabic, etc.), leveraging the polyglot capabilities of the underlying LLM.
 
-## 🧠 How It Works
+## How It Works
 
 MedAgent operates on a **LangGraph-based state machine** that coordinates specialized agents:
 
@@ -35,7 +35,7 @@ MedAgent operates on a **LangGraph-based state machine** that coordinates specia
 7.  **Response**: The final verified answer is streamed to the user.
 
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -56,7 +56,7 @@ MedAgent operates on a **LangGraph-based state machine** that coordinates specia
 2.  **Create and activate a virtual environment**:
     ```bash
     python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    source venv/bin/activate  # On Windows: venv\\Scripts\\activate
     ```
 
 3.  **Install dependencies**:
@@ -74,7 +74,7 @@ MedAgent operates on a **LangGraph-based state machine** that coordinates specia
     NCBI_EMAIL=your.email@example.com
     ```
 
-## 🛠️ Usage
+## Usage
 
 ### Run the Web Interface (Streamlit)
 The recommended way to use MedAgent.
@@ -96,14 +96,14 @@ Use the command-line interface for quick queries.
 python src/main.py
 ```
 
-## 🧪 Testing
+## Testing
 
 Run the unit tests to verify system integrity.
 ```bash
 pytest tests/
 ```
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 MedAgent/
@@ -123,15 +123,15 @@ MedAgent/
 ```
 
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any improvements.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
-## 👤 Author
+## Author
 
 **Mohammed Saber**
 
