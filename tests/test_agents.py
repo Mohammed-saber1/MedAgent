@@ -1,52 +1,56 @@
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, patch, MagicMock
-
-from src.agents.evaluation_agent import evaluation_agent
-from src.agents.orchestration_agent import orchestrate_query
-from src.agents.medillama_agent import medillama_agent
+from unittest.mock import AsyncMock, MagicMock, patch
 from src.schemas.state import GraphState
+from src.agents.evaluation_agent import evaluation_agent
+from src.agents.medillama_agent import medillama_agent
+from langchain_core.messages import AIMessage
 
 @pytest.mark.asyncio
 async def test_evaluation_agent_simple():
-    # Mock LLM response
-    with patch("src.agents.evaluation_agent.LLM") as mock_llm:
+    state: GraphState = {"userQuery": "What is 2+2?", "tasks": {}}
+    
+    # Patch the PROMPT so when prompt | LLM is called, we return a mock chain
+    with patch("src.agents.evaluation_agent.query_evaluation_prompt") as mock_prompt:
         mock_chain = AsyncMock()
-        mock_chain.ainvoke.return_value = MagicMock(content="SIMPLE: This is a simple answer.")
+        mock_chain.ainvoke.return_value = AIMessage(content="SIMPLE: This is simple.")
         
-        # Configure the mock to return the chain when piped
-        mock_llm.__ror__ = MagicMock(return_value=mock_chain) 
-        # Actually in the code: query_evaluation_prompt | LLM
-        # We need to mock the pipe or the chain execution. 
-        # Easier to mock the chain variable inside the function if we could, but that's hard.
-        # Let's try mocking the module level LLM.
-        pass
+        # prompt | LLM calls prompt.__or__(LLM)
+        mock_prompt.__or__.return_value = mock_chain
+        
+        result = await evaluation_agent(state)
+        
+        assert result["isSimpleQuery"] is True
+        assert result["finalResponse"] == "This is simple."
 
-# A better approach for testing LangChain pipelines is to mock the `ainvoke` method of the resulting chain
-# or mock the components.
+
+@pytest.mark.asyncio
+async def test_evaluation_agent_complex():
+    state: GraphState = {"userQuery": "Complex medical case", "tasks": {}}
+    
+    with patch("src.agents.evaluation_agent.query_evaluation_prompt") as mock_prompt:
+        mock_chain = AsyncMock()
+        mock_chain.ainvoke.return_value = AIMessage(content="COMPLEX: Needing research.")
+        mock_prompt.__or__.return_value = mock_chain
+        
+        result = await evaluation_agent(state)
+        
+        assert result["isSimpleQuery"] is False
+
 
 @pytest.mark.asyncio
 async def test_medillama_agent():
-    state = {
-        "tasks": {
-            "MedILlama": [{"query": "What is Diabetes?"}]
-        }
+    state: GraphState = {
+        "userQuery": "Diabetes info", 
+        "tasks": {"MedILlama": [{"query": "Explain Diabetes"}]}
     }
     
-    with patch("src.agents.medillama_agent.FINETUNED_MODEL") as mock_model:
-        # Mock the chain execution
-        # chain = prompt | model
-        # We need to mock the behavior of `prompt | model`
-        
+    with patch("src.agents.medillama_agent.medillama_prompt") as mock_prompt:
         mock_chain = AsyncMock()
-        mock_chain.ainvoke.return_value = MagicMock(content="Diabetes is a metabolic disease.")
+        mock_chain.ainvoke.return_value = AIMessage(content="Diabetes is high blood sugar.")
+        mock_prompt.__or__.return_value = mock_chain
         
-        # We can patch the whole chain construction or just the invoke if we structure code for dependency injection.
-        # Given the current code structure, we might need to patch the pipe operator or the invoke.
+        result = await medillama_agent(state)
         
-        # Let's try a simpler test that just runs the function and ensures no crashes, 
-        # assuming we can mock the chain.
-        pass
+        assert "Diabetes is high blood sugar." in result["medILlamaResponse"]
+        assert "Tasks:" in result["medILlamaResponse"]
 
-# Since unit testing LangChain chains with `|` operator can be tricky without refactoring for DI,
-# We will write a simple test for the graph structure and maybe a functional test if possible.

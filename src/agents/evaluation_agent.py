@@ -1,25 +1,26 @@
 from src.schemas.state import GraphState
 from src.utils.prompts import query_evaluation_prompt
-from src.config import LLM
+from src.config import LLM, logger
 
 async def evaluation_agent(state: GraphState) -> dict:
     """
     Evaluates if the query is simple or complex.
+    Simple queries are answered directly; complex ones go through full orchestration.
     """
-    print("\n⚖️ Evaluation Agent Started")
+    logger.info("⚖️ Evaluation Agent Started")
     
     chain = query_evaluation_prompt | LLM
     evaluation = await chain.ainvoke({"userQuery": state["userQuery"]})
     response = evaluation.content
     
     if response.startswith("SIMPLE:"):
-        print("✅ Query evaluated as SIMPLE")
+        logger.info("✅ Query evaluated as SIMPLE")
         return {
             "finalResponse": response[7:].strip(),
             "isSimpleQuery": True
         }
     
-    print("Example: Query evaluated as COMPLEX")
+    logger.info("Query evaluated as COMPLEX")
     return {
         "isSimpleQuery": False
     }

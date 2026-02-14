@@ -1,23 +1,62 @@
 import os
-from dotenv import load_dotenv
+import logging
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from langchain_groq import ChatGroq
+from langchain_huggingface import HuggingFaceEmbeddings
 
-# Load environment variables
-load_dotenv()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("MedAgent")
 
-# Constants
-MAX_ITERATIONS = 3
-BYPASS_REFLECTION = True  # Set to True to bypass reflection LLM calls
+class Settings(BaseSettings):
+    """
+    Application settings and environment variables.
+    """
+    # API Keys
+    GROQ_API_KEY: str
+    TAVILY_API_KEY: str = "" # Optional if not using search? No, usually required.
+    
+    # Database
+    MONGODB_URI: str
+    MONGODB_DB_NAME: str = "medagent_db"
+    
+    # Models
+    LLM_MODEL: str = "llama-3.3-70b-versatile"
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    
+    # Agent Settings
+    MAX_SEARCH_RESULTS: int = 5
+    BYPASS_REFLECTION: bool = True
+    
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-# Initialize LLMs — all using Groq (no local Ollama needed)
-def get_groq_model():
+@lru_cache()
+def get_settings():
+    return Settings()
+
+settings = get_settings()
+
+# ── Initialize Resources ─────────────────────────────────
+
+def get_llm():
+    """Get the configured ChatGroq instance."""
     return ChatGroq(
-        api_key=os.getenv("GROQ_API_KEY"),
-        model_name="llama-3.3-70b-versatile",
+        model=settings.LLM_MODEL,
         temperature=0,
+        api_key=settings.GROQ_API_KEY
     )
 
-# Both use Groq — FINETUNED_MODEL kept for backward compatibility with agent imports
-FINETUNED_MODEL = get_groq_model()
-LLM = get_groq_model()
+def get_embeddings():
+    """Get the configured Embeddings instance."""
+    return HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)
 
+# Export instances for backward compatibility
+# Deprecated: Import functions or settings instead in new code
+LLM = get_llm()
+FINETUNED_MODEL = LLM # Alias as per old config
+embeddings = get_embeddings()

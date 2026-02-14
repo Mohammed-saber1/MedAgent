@@ -9,7 +9,7 @@ from src.agents.web_search_agent import web_search_agent
 from src.agents.compile_agent import compile_agent
 from src.agents.reflection_agent import reflection_agent
 from src.agents.pubmed_rag_agent import pubmed_rag_agent
-from src.config import MAX_ITERATIONS
+from src.config import settings
 
 def create_agent_graph():
     """
@@ -83,7 +83,10 @@ def create_agent_graph():
         quality_passed = state.get("qualityPassed", True)
         iteration_count = state.get("iterationCount", 0)
         
-        if quality_passed or iteration_count >= MAX_ITERATIONS:
+        # Use settings.MAX_ITERATIONS (default 3 if not set)
+        max_iter = getattr(settings, "MAX_ITERATIONS", 3)
+        
+        if quality_passed or iteration_count >= max_iter:
             return "end"
         return "orchestrate"
 

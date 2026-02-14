@@ -6,13 +6,14 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
 from src.schemas.state import GraphState
+from src.config import logger
 
 async def pubmed_rag_agent(state: GraphState) -> dict:
     """
     Searches PubMed and uses RAG to retrieve detailed medical information.
-    This replaces the 'stub' in the original TS code.
+    Uses Biopython for fetching and Chroma for vector search.
     """
-    print("\n📚 PubMed RAG Agent Started")
+    logger.info("📚 PubMed RAG Agent Started")
     
     # Check if RAG is required
     required = state.get("requiredAgents", {}).get("rag", False)
@@ -25,7 +26,6 @@ async def pubmed_rag_agent(state: GraphState) -> dict:
     tasks = state.get("tasks", {}).get("RAG", [])
     if not tasks and state.get("userQuery"):
        # Fallback to user query if RAG was requested but no specific tasks derived
-       # Or if we want to run it on main query
        queries = [state["userQuery"]]
     else:
        queries = [t.query if hasattr(t, 'query') else str(t) for t in tasks]
@@ -39,7 +39,7 @@ async def pubmed_rag_agent(state: GraphState) -> dict:
     all_abstracts = []
     
     for query in queries:
-        print(f"Searching PubMed for: {query}")
+        logger.info(f"Searching PubMed for: {query}")
         try:
             # Search for IDs
             handle = Entrez.esearch(db="pubmed", term=query, retmax=5)
@@ -51,10 +51,6 @@ async def pubmed_rag_agent(state: GraphState) -> dict:
                 continue
                 
             # Fetch details
-            handle = Entrez.efetch(db="pubmed", id=id_list, rettype="medline", retmode="text")
-            # For simplicity, let's fetch summary as xml or just text and parse?
-            # medline plain text is easy to read but hard to parse structured.
-            # let's try 'xml' for meaningful abstract extraction
             handle = Entrez.efetch(db="pubmed", id=id_list, retmode="xml")
             papers = Entrez.read(handle)
             handle.close()
@@ -72,19 +68,18 @@ async def pubmed_rag_agent(state: GraphState) -> dict:
                             page_content=abstract,
                             metadata={"source": f"PMID:{pmid}", "title": title}
                         ))
-                except Exception as e:
+                except Exception:
                     continue
 
         except Exception as e:
-            print(f"PubMed search error: {e}")
+            logger.error(f"PubMed search error: {e}")
             continue
 
     if not all_abstracts:
         return {"ragResponse": "No relevant PubMed articles found."}
 
     # 2. Vector Store (In-memory Chroma for this session)
-    # Using HuggingFace Embeddings (lightweight, no Ollama needed)
-    print("Embedding and retrieving...")
+    logger.info("Embedding and retrieving...")
     embeddings = HuggingFaceEmbeddings(
         model_name="all-MiniLM-L6-v2"
     )
@@ -97,14 +92,14 @@ async def pubmed_rag_agent(state: GraphState) -> dict:
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
     retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
     
-    # Retrieve based on original queries (combining them?)
+    # Retrieve based on original queries
     combined_context = ""
     for query in queries:
         docs = retriever.invoke(query)
         for doc in docs:
             combined_context += f"Source: {doc.metadata['source']} - {doc.metadata['title']}\n{doc.page_content}\n\n"
             
-    print("✅ PubMed RAG Completed")
+    logger.info("✅ PubMed RAG Completed")
     return {
         "ragResponse": combined_context
     }

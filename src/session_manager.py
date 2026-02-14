@@ -1,40 +1,28 @@
-import os
+import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Optional
 
-from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 
-load_dotenv()
+from src.config import settings, logger
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "medagent")
-
-
-class ConversationEntry(BaseModel):
-    """A single conversation turn (query + response)."""
-    query: str
-    response: str
-    is_simple: bool = False
-    timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+from src.schemas.models import ConversationEntry
 
 
 class SessionManager:
     """MongoDB-backed session store for conversation history."""
 
     def __init__(self):
-        self._client = AsyncIOMotorClient(MONGODB_URI)
-        self._db = self._client[MONGODB_DB_NAME]
+        self._client = AsyncIOMotorClient(settings.MONGODB_URI)
+        self._db = self._client[settings.MONGODB_DB_NAME]
         self._col = self._db["sessions"]
+        logger.info(f"SessionManager initialized with DB: {settings.MONGODB_DB_NAME}")
 
     async def create_session(
         self, session_id: Optional[str] = None
     ) -> dict:
         """Create a new session document in MongoDB."""
-        import uuid
         if session_id is None:
             session_id = str(uuid.uuid4())
 
@@ -46,6 +34,7 @@ class SessionManager:
             "history": [],
         }
         await self._col.insert_one(doc)
+        logger.debug(f"Created new session: {session_id}")
         return doc
 
     async def get_session(
@@ -77,11 +66,16 @@ class SessionManager:
                 },
             },
         )
+        logger.debug(f"Added interaction to history for session: {session_id}")
 
     async def delete_session(self, session_id: str) -> bool:
         """Delete a session. Returns True if deleted."""
         result = await self._col.delete_one({"_id": session_id})
         return result.deleted_count > 0
+
+    def close(self):
+        """Close the MongoDB client."""
+        self._client.close()
 
 
 # Singleton instance

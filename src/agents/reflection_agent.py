@@ -4,12 +4,10 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from src.schemas.state import GraphState
-from src.config import BYPASS_REFLECTION, LLM
+from src.config import logger, settings, LLM
 
 # Schema for Structured Output
-class ReflectionOutput(BaseModel):
-    qualityPassed: bool
-    feedback: Optional[str] = None
+from src.schemas.models import ReflectionOutput
 
 SYSTEM_PROMPT = """You are a specialized medical knowledge quality check agent. Your task is to critically review the following medical response for accuracy, completeness, identify knowledge gaps and adherence to current evidence-based medical standards. Also ensure that the response follows medical guidelines, (if not sure about the guidelines, you can ask it adhere to certain guidelines by web searching it)
 
@@ -24,9 +22,9 @@ IMPORTANT: Set the qualityPassed to true if the response is good, and false if i
 
 async def reflection_agent(state: GraphState) -> dict:
     """
-    Reflects on the final response quality.
+    Reflects on the final response quality using an LLM critique.
     """
-    print("\n🤔 Reflection Agent Started")
+    logger.info("🤔 Reflection Agent Started")
     
     if not state.get("finalResponse"):
         return {}
@@ -34,11 +32,11 @@ async def reflection_agent(state: GraphState) -> dict:
     iteration_count = state.get("iterationCount", 0) + 1
     
     if iteration_count > 3:
-        print("⚠️ Max iterations reached (handled in graph logic, but fail-safe here)")
+        logger.warning("⚠️ Max iterations reached (handled in graph logic, but fail-safe here)")
         return {"iterationCount": iteration_count, "qualityPassed": True}
 
-    if BYPASS_REFLECTION:
-        print("⚠️ Reflection bypassed due to BYPASS_REFLECTION flag")
+    if settings.BYPASS_REFLECTION:
+        logger.warning("⚠️ Reflection bypassed due to BYPASS_REFLECTION flag")
         return {
             "iterationCount": iteration_count,
             "qualityPassed": True,
@@ -59,7 +57,7 @@ async def reflection_agent(state: GraphState) -> dict:
             {"role": "user", "content": formatted_user_prompt}
         ])
         
-        print(f"Reflection Result: Passed={result.qualityPassed}")
+        logger.info(f"Reflection Result: Passed={result.qualityPassed}")
         
         return {
             "iterationCount": iteration_count,
@@ -68,7 +66,7 @@ async def reflection_agent(state: GraphState) -> dict:
         }
 
     except Exception as e:
-        print(f"❌ Reflection failed: {e}")
+        logger.error(f"❌ Reflection failed: {e}")
         return {
              "iterationCount": iteration_count,
              "qualityPassed": True,

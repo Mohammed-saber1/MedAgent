@@ -1,81 +1,50 @@
-# ─────────────────────────────────────────────
-#  Python
-# ─────────────────────────────────────────────
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-*.egg-info/
-*.egg
-dist/
+.Python
 build/
-*.whl
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Virtual environments
+# Virtual Environments
 venv/
-.venv/
 env/
-.env/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
 
-# ─────────────────────────────────────────────
-#  Environment variables
-# ─────────────────────────────────────────────
+# Environment Variables
 .env
 .env.local
-.env.development
-.env.test
-.env.production
+.env.*
 
-# ─────────────────────────────────────────────
-#  IDE / Editor
-# ─────────────────────────────────────────────
+# IDEs
 .vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.cursor/
-.cursorrules
+*.swp
+*.swo
 
-# ─────────────────────────────────────────────
-#  OS files
-# ─────────────────────────────────────────────
+# MacOS
 .DS_Store
-Thumbs.db
-desktop.ini
 
-# ─────────────────────────────────────────────
-#  Logs & Diagnostics
-# ─────────────────────────────────────────────
-logs/
-*.log
-
-# ─────────────────────────────────────────────
-#  ChromaDB / Vector stores
-# ─────────────────────────────────────────────
-chroma_data/
-*.chromadb
-
-# ─────────────────────────────────────────────
-#  LangGraph
-# ─────────────────────────────────────────────
-.langgraph_api
-
-# ─────────────────────────────────────────────
-#  Miscellaneous
-# ─────────────────────────────────────────────
-repomix-output.txt
-
-# ─────────────────────────────────────────────
-#  MongoDB
-# ─────────────────────────────────────────────
-mongo_data/
-data/db/
-
-# ─────────────────────────────────────────────
-#  Agent / Gemini
-# ─────────────────────────────────────────────
-.gemini/
-.agent/
+# MedAgent Specific
+medagent.log
+demos/*.mp4
+!demos/MedAgent_demo.mp4

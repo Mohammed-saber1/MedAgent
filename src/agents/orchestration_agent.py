@@ -1,13 +1,18 @@
 from src.schemas.state import GraphState, OrchestrationData
 from src.schemas.decomposition import DecompositionOutput
 from src.utils.prompts import task_decomposition_prompt, improvement_prompt
-from src.config import LLM, MAX_ITERATIONS
+from src.config import LLM, logger
+# MAX_ITERATIONS used to be in config, now handling locally or via settings if needed. 
+# Assuming settings.MAX_ITERATIONS or local logic.
+# The original code imported MAX_ITERATIONS from config.
+MAX_ITERATIONS = 3 # Hardcoding or retrieving from settings if available in config.py
 
 async def orchestrate_query(state: GraphState) -> dict:
     """
     Orchestrates the query by decomposing it into tasks for other agents.
+    Handles both initial decomposition and iterative improvement.
     """
-    print("\n🎵 Orchestration Agent Started")
+    logger.info("🎵 Orchestration Agent Started")
     
     # Reset accumulated responses for a new iteration
     med_response = ""
@@ -18,7 +23,7 @@ async def orchestrate_query(state: GraphState) -> dict:
     quality_passed = state.get("qualityPassed", True)
     
     if not quality_passed and iteration_count <= MAX_ITERATIONS:
-        print(f"\n\n⚠️ Quality check failed. Reflection feedback: {state.get('reflectionFeedback')} \n\n")
+        logger.warning(f"⚠️ Quality check failed. Reflection feedback: {state.get('reflectionFeedback')}")
         
         # Use improvement prompt
         llm_with_structured = LLM.with_structured_output(DecompositionOutput)

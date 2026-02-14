@@ -158,6 +158,12 @@ compile_agent_prompt = ChatPromptTemplate.from_messages([
     5. Include a short summary of the entire answer at the end.
     6. If the query is complex, you can suggest urls for further reading on interesting or new topics. Explain why the url is relevant to the query.
 
+    LANGUAGE SUPPORT:
+    - Detect the language of the user's query (English, Arabic, French, German).
+    - The final response MUST be in the SAME language as the user's query.
+    - Translate all medical terms and explanations accurately.
+    - Keep citations and URLs in their original format (usually English).
+
     Formatting Requirements:
     - Use proper formatting using markdown
     - Break complex information into digestible paragraphs
@@ -224,6 +230,11 @@ compile_without_web_prompt = ChatPromptTemplate.from_messages([
     3. Include a short summary of the entire answer at the end
     4. If the query is complex, you can suggest areas for further research
 
+    LANGUAGE SUPPORT:
+    - Detect the language of the user's query (English, Arabic, French, German).
+    - The final response MUST be in the SAME language as the user's query.
+    - Translate all medical terms and explanations accurately.
+
     Formatting Requirements:
     - Use proper formatting using markdown
     - Break complex information into digestible paragraphs
@@ -266,6 +277,10 @@ compile_refinement_prompt = ChatPromptTemplate.from_messages([
     - Maintain a clear structure with updated headings and sections.
     - Highlight the refinements made based on the feedback.
     - Ensure the updated report is cohesive, scientifically accurate, and professionally written.
+    
+    LANGUAGE SUPPORT:
+    - Respond in the SAME language as the User Feedback / Original Query.
+    - Translate all content if needed.
   """),
     HumanMessagePromptTemplate.from_template("""
     Previous Final Report:
@@ -332,7 +347,9 @@ query_evaluation_prompt = ChatPromptTemplate.from_messages([
     - RAG Database: For detailed technical and scientific information
 
     If the query is SIMPLE (can be answered directly with general medical knowledge):
-    - Respond with: "SIMPLE: [Your comprehensive answer to the query]"
+    If the query is SIMPLE (can be answered directly with general medical knowledge):
+    - Respond with: "SIMPLE: [Your comprehensive answer to the query IN THE SAME LANGUAGE AS THE QUERY]"
+    - Supported languages: English, Arabic, French, German. Translate if necessary.
 
     If the query would benefit from multiple agents (needs recent studies, detailed analysis, or multiple perspectives):
     - Respond with just the word: "COMPLEX"

@@ -3,13 +3,13 @@ import json
 from langchain_tavily import TavilySearch
 from src.schemas.state import GraphState, WebSearchResult, WebSearchResultItem
 from src.utils.prompts import search_summary_prompt
-from src.config import LLM
+from src.config import LLM, logger, settings
 
 async def web_search_agent(state: GraphState) -> dict:
     """
-    Retrieves and summarizes information from the web.
+    Retrieves and summarizes information from the web using Tavily.
     """
-    print("\n🔎 Web Search Agent Started")
+    logger.info("🔎 Web Search Agent Started")
     
     tasks = state.get("tasks", {}).get("WebSearch", [])
     web_search_tasks = []
@@ -27,14 +27,14 @@ async def web_search_agent(state: GraphState) -> dict:
                  web_search_tasks.append(str(t))
 
     tavily_tool = TavilySearch(
-        max_results=5,
-        tavily_api_key=os.getenv("TAVILY_API_KEY")
+        max_results=settings.MAX_SEARCH_RESULTS,
+        tavily_api_key=settings.TAVILY_API_KEY
     )
     
     all_results = []
     
     for query in web_search_tasks:
-        print(f"\n🔎 Searching for: \"{query}\"")
+        logger.info(f"🔎 Searching for: \"{query}\"")
         try:
             raw_results = await tavily_tool.ainvoke(query)
 
@@ -60,7 +60,7 @@ async def web_search_agent(state: GraphState) -> dict:
                         content=r.get("content", ""),
                     ))
             
-            print(f"✓ Found {len(search_items)} results for query: \"{query}\"")
+            logger.info(f"✓ Found {len(search_items)} results for query: \"{query}\"")
             
             all_results.append(WebSearchResult(
                 query=query,
@@ -68,10 +68,10 @@ async def web_search_agent(state: GraphState) -> dict:
             ))
             
         except Exception as e:
-             print(f"❌ Error searching for \"{query}\": {e}")
+             logger.error(f"❌ Error searching for \"{query}\": {e}")
 
     if not all_results:
-        print("❌ No search results found for any query")
+        logger.warning("❌ No search results found for any query")
         return {} # Return empty update, don't change state
 
     # Prepare content for summary
@@ -84,12 +84,10 @@ async def web_search_agent(state: GraphState) -> dict:
 
     # Token limit check (rough optimization)
     if len(combined_content) / 4 > 6000:
-        print("⚠️ Content too large for summary, returning raw results only (or implementing truncation)")
-        # For now, let's truncate context if needed or just proceed and rely on LLM context window (70b usually has large window)
-        # combined_content = combined_content[:24000] 
+        logger.warning("⚠️ Content too large for summary, relying on LLM context window limits")
 
     try:
-        print("\n📝 Generating summary of search results...")
+        logger.info("📝 Generating summary of search results...")
         chain = search_summary_prompt | LLM
         
         # Extract URLs for prompt
@@ -103,7 +101,7 @@ async def web_search_agent(state: GraphState) -> dict:
             "urls": json.dumps(urls_list)
         })
         
-        print("\n✅ Web Search Agent Completed")
+        logger.info("✅ Web Search Agent Completed")
         
         return {
             "webSearchResponse": summary.content,
@@ -111,7 +109,7 @@ async def web_search_agent(state: GraphState) -> dict:
         }
 
     except Exception as e:
-        print(f"❌ Error generating summary: {e}")
+        logger.error(f"❌ Error generating summary: {e}")
         return {
             "webSearchResponse": f"Error generating search summary: {str(e)}",
             "webSearchResults": all_results
