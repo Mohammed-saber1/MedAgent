@@ -4,7 +4,8 @@ MedAgent is a sophisticated **multi-agent AI system** designed to revolutionize 
 ---
 
 ## 🎥 Demo
-https://github.com/user-attachments/assets/b0c195c8-3be8-4864-9f88-85c05dd30463
+https://github.com/user-attachments/assets/c4e68f64-3340-428d-ae75-e56d80b9cfae
+
 
 ## 🚀 Key Features
 
